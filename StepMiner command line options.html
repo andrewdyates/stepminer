@@ -1,0 +1,241 @@
+
+<!-- saved from url=(0068)http://gourd.stanford.edu/~sahoo/public/StepMiner/stepminer-cmd.html -->
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+<title> StepMiner command line options </title>
+</head>
+
+<body>
+
+<h1> StepMiner command line options </h1>
+
+Copied from Appendix C of my thesis: <br>
+<a href="http://gourd.stanford.edu/~sahoo/dsahoo-thesis.pdf">
+Ph.D. Thesis: Boolean analysis of high-throughput biological datasets </a> <br>
+Ph.D. Advisor: David L. Dill, Co-advisor: Sylvia K. Plevritis <br> 
+
+Download StepMiner jar files :<br>
+<a href="http://gourd.stanford.edu/~sahoo/public/StepMiner/stepminer-1.0.jar">
+stepminer-1.0.jar </a> <br>
+<a href="http://gourd.stanford.edu/~sahoo/public/StepMiner/stepminer-1.1.jar">
+stepminer-1.1.jar </a> <br>
+
+<pre>prompt&gt; java -jar stepminer-1.0.jar
+Usage: tools.Analyze [-d/--debug] &lt; filename&gt;
+                     [-r/--reduceLog] &lt; filename&gt;
+                     --gui [&lt; filename&gt;]
+                     [options] &lt; filename&gt;
+Options:
+    [-o/--outfile &lt; file.ano&gt;] [-o/--outfile &lt; file.pcl&gt;]
+    [-o/--outfile [&lt; tag&gt;:]&lt; file.ann&gt;] [-o/--outfile &lt; file.exp&gt;]
+    [-o/--outfile <file.cdt>] [-o/--outfile &lt; file.gmx&gt;]
+    [-o/--outfile [<tag>:]<file.ps>] [-o/--outfile &lt; file.png&gt;]
+    Example tags: All, Step, Up, Down, UpDown, DownUp, Rest
+    [-t/--type &lt; type&gt;]
+            &lt; type&gt; : OneStep, OneStepFdr, Fdr,
+                     Order, Subset, ZeroCenter, MeanCenter,
+                     None, ListGenes, Normalize,
+                     KNNimpute, LLSimpute
+    [--annFile &lt; Gene Annotation File : 15 columns format&gt;]
+    [--onnFile &lt; Ontology File : OBO format&gt;]
+    [--org &lt; Organism: Mm/Hs/Sgd/Pombie&gt;]
+    [--geneIndex &lt; arrayIndex of gene description&gt;]
+    [--splitString &lt; Splitting regexp of the gene str&gt;]
+    [--splitIndex &lt; Index of gene after splitting&gt;]
+    [--goPvalue &lt; pvalue threshold of GOAnalysis&gt;]
+    [--range &lt; ex: 4:17 Range of array indices for analysis&gt;]
+    [-p/--pvalue &lt; pvalue threshold&gt;]
+    [--numMissing &lt; Number of missing timepoints&gt;]
+    [--Intersect &lt; file&gt;]
+    [--Union &lt; file&gt;]
+    [--Select &lt; file&gt;] select ids with original order
+    [--SelectOrder &lt; file&gt;] select ids with given order
+    [--Diff &lt; file&gt;]
+    [--SelectNames &lt; file&gt;] select names with original order
+</file.ps></tag></file.cdt></pre>
+
+Following are few command-line examples for running StepMiner.
+
+<pre>prompt&gt; java -Xms64m -Xmx512m -jar stepminer-1.0.jar
+        - prints command line options
+</pre>
+
+To invoke GUI from command line:
+<pre>prompt&gt; java -Xms64m -Xmx512m -jar stepminer-1.0.jar --gui
+</pre>
+
+Timecourse analysis of yeast.pcl and the results are saved in yeast-step.pcl.
+<pre>java -Xms64m -Xmx512m -jar stepminer-1.0.jar \
+     -t OneStep yeast.pcl -o yeast-step.pcl
+</pre>
+
+StepMiner also dumps information about the calculated p-values for each gene.
+<pre>java -Xms64m -Xmx512m -jar stepminer-1.0.jar \
+     -t OneStep yeast.pcl -o yeast-step.ano -o yeast-step.ann
+</pre>
+
+<h3> The columns in yeast-step.ann are as follows :</h3>
+<table border="0">
+<tbody><tr>
+<td> Name </td> <td> - </td> <td>probe id corresponds to the first column of
+the PCL file. </td> 
+</tr>
+<tr>
+<td> num </td> <td> - </td> <td> number of timepoints. </td>
+</tr>
+<tr>
+<td> numSteps </td> <td> - </td> <td> number of steps found. </td>
+</tr>
+<tr>
+<td> geneIndex </td> <td> - </td> <td> The column index in the PCL file that has the gene name
+and the description of the gene. </td>
+</tr>
+<tr>
+<td> pvalue </td> <td> - </td> <td> pvalue for the fitted steps. </td>
+</tr>
+<tr>
+<td> sstot </td> <td> - </td> <td> Sum of square error for no-step (fitting with mean). </td>
+</tr>
+<tr>
+<td> sse </td> <td> - </td> <td> Sum of square error for the fitted steps.
+</td>
+</tr>
+<tr>
+<td> label </td> <td> - </td> <td> labels for various matching </td>
+</tr>
+<tr>
+<td> </td> <td> 0 - </td> <td> no significant step </td>
+</tr>
+<tr>
+<td> </td> <td> 1 - </td> <td> one step - Up </td>
+</tr>
+<tr>
+<td> </td> <td> 2 - </td> <td> one step - Down </td>
+</tr>
+<tr>
+<td> </td> <td> 3 - </td> <td> two step - UpDown </td>
+</tr>
+<tr>
+<td> </td> <td> 4 - </td> <td> two step - DownUp </td>
+</tr><tr>
+<td> step0 </td> <td> - </td> <td> position of first step. </td>
+</tr><tr>
+<td> step1 </td> <td> - </td> <td> position of the second step. </td>
+</tr><tr>
+<td> mean0 </td> <td> - </td> <td> mean for the first segment. </td>
+</tr><tr>
+<td> mean1 </td> <td> - </td> <td> mean for the second segment. </td>
+</tr><tr>
+<td> mean2 </td> <td> - </td> <td> mean for the third segment. </td>
+</tr>
+</tbody></table>
+<br>
+<h3>The columns in yeast-step.ano are as follows :</h3>
+The first three columns are directly copied from the PCL file. Next five
+columns
+are as follows: <br>
+<table border="0">
+<tbody><tr>
+<td> label </td> <td>-   </td> <td> labels for various matching   </td>
+</tr><tr>
+<td>       </td> <td>0 - </td> <td> no significant step           </td>
+</tr><tr>
+<td>       </td> <td>2 - </td> <td> one step                      </td>
+</tr><tr>
+<td>       </td> <td>3 - </td> <td> two step                      </td>
+</tr><tr>
+<td> dir   </td> <td>-   </td> <td> labels for various matching   </td>
+</tr><tr>
+<td>       </td> <td>0 - </td> <td> one step - Up                 </td>
+</tr><tr>
+<td>       </td> <td>1 - </td> <td> one step - Down               </td>
+</tr><tr>
+<td>       </td> <td>2 - </td> <td> two step - UpDown             </td>
+</tr><tr>
+<td>       </td> <td>3 - </td> <td> two step - DownUp             </td>
+</tr><tr>
+<td> step1 </td> <td>-   </td> <td> position of first step.       </td>
+</tr><tr>
+<td> step2 </td> <td>-   </td> <td> position of the second step.  </td>
+</tr><tr>
+<td> pvalue</td> <td>-   </td> <td> pvalue for the fitted steps.  </td>
+</tr>
+</tbody></table>
+The rest of the columns are directly copied from the PCL file.
+<h3> GO Analysis </h3>
+Following are complex examples that performs GO Analysis after StepMiner
+analysis: <br>
+
+<pre>java -Xms64m -Xmx512m -jar stepminer-1.0.jar\
+     --onnFile "http://www.geneontology.org/ontology/gene_ontology.obo"\
+     --annFile \
+     "http://www.geneontology.org/gene-associations/gene_association.sgd.gz"\
+     -o label.html --org "Sgd" \
+     http://gourd.stanford.edu/~sahoo/public/StepMiner/yeast-batch1.pcl
+
+
+java -Xms64m -Xmx512m -jar stepminer-1.0.jar \
+     --onnFile "http://www.geneontology.org/ontology/gene_ontology.obo" \
+     --annFile "gene_association.goa_human.gz" \
+     --range 3:17 --geneIndex 1 --splitIndex 1 -o label.html --org "Hs" \
+     http://gourd.stanford.edu/~sahoo/public/StepMiner/t-cell-control-cd3.pcl
+
+</pre>
+
+<h3>Specifying replicates using StepMiner </h3>
+Download
+<a href="http://gourd.stanford.edu/~sahoo/public/StepMiner/stepminer-1.1.jar">
+stepminer-1.1.jar </a>. <br>
+
+Analysis of 4 timepoints with three replicates:
+<pre>java -cp stepminer-1.1.jar tools.CustomAnalysis step \
+     output.pcl yourfile.pcl pvalue 0.05 type TwoStep \
+     timepoints "0x3,1x3,2x3,3x3"
+
+</pre>
+
+<pre>Usage:
+java -cp stepminer-1.1.jar tools.CustomAnalysis step \
+     output.pcl yourfile.pcl [&lt; command&gt; &lt; arg&gt;]*
+
+&lt; command&gt; &lt; arg&gt;:
+    type        OneStep/TwoStep/BothStep/SelectTwoStep
+    centering   NoCentering/Step
+    range       n:m
+    org         Hs/Mm/Sgd/Pombie/Dm/Affy/Card
+    annFile     &lt; Annotation file&gt;
+    onnFile     &lt; Ontology file&gt;
+    timepoints  &lt; timepoint string&gt;
+    pvalue      &lt; number&gt;
+    goPvalue    &lt; pvalue threshold for GO Analysis&gt;
+    fdr         true/false
+    geneIndex   &lt; index of PCL file that has the gene name&gt;
+    splitString &lt; delimiter for the gene name&gt;
+    splitIndex  &lt; index of gene name after splitting with splitString&gt;
+    numMissing  &lt; number of missing values allowed&gt;
+</pre>
+
+<h3> More examples </h3>
+
+To extract geneset from StepMiner:<br>
+The description of genes are present in the second column of the pcl file.
+Lets assume that the description format is "gene name: gene title" e.g. "CCNB2: Cyclin B2". Using StepMiner it is possible to extract the gene names from this
+as follows:
+<pre>java -Xms64m -Xmx512m -jar stepminer-1.1.jar -p 0.01 expt.pcl -o expt.gmt \
+     --splitString ":" --geneIndex 1 --splitIndex 0
+</pre>
+
+To run GO Analysis on the extracted geneset:<br>
+<pre>java -cp stepminer-1.1.jar tools.CustomAnalysis go \
+    expt-goanalysis.html "gene_ontology.obo" \
+    "gene_association.mgi" Mm 0.001 expt.gmt
+</pre>
+
+<br>
+<br>
+<br>
+Author: Debashis Sahoo<br>
+Stanford University<br>
+
+
+
+</body></html>
