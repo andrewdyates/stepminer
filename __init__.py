@@ -1,7 +1,7 @@
 #!/usr/bin/python
+from __future__ import division
 from matrix_io import *
 import subprocess
-
 
 CMD = "time java -jar %s -t OneStep %%s -o %%s" % (os.path.abspath("stepminer-1.1.jar"))
 
@@ -59,3 +59,39 @@ def transform_output(fp, row_ids, M):
     rows[rowid] = M[rowid_idx[rowid],int(t)]
   return rows
     
+def get_bound(M, percentile=.05):
+  """Return threshold +/- bound based on stdev percentile."""
+  c = np.percentile(np.std(M, 1), percentile)
+  return c
+
+def classify_pair(v1, v2, t1, c1, t2, c2, conf_t=2/3):
+  """Boolean classify pair of vectors.
+
+  Args:
+    v1, v2: [num] of vector pair to classify
+    t1, t2: step threshold value for v1 and v2 respectively
+    c1, c2: threshold confidence interval for v1 and v2 respectively
+    conf_t: maximum ratio of values in threshold interval to classify
+  Returns:
+    ?
+  """
+  assert len(v1) == len(v2)
+  low_conf1 = np.sum((v1 >= t1-c1) & (v1 <= t1+c1))
+  low_conf2 = np.sum((v2 >= t2-c2) & (v2 <= t2+c2))
+  if low_conf1/len(v1) > conf:
+    return "Unclassifed"
+  if low_conf2/len(v2) > conf:
+    return "Unclassifed"
+  
+  a00 = np.sum(v1<t1-c1 & v2<t2-c2)
+  a01 = np.sum(v1<t1-c1 & v2>t2+c2)
+  a10 = np.sum(v1>t1+c1 & v2<t2-c2)
+  a11 = np.sum(v1>t1+c1 & v2>t2+c2)
+  total = a00 + a01 + a10 + a11
+  assert low_conf1 + low_conf2 + total == len(v1) 
+
+  expected = (a00+a01)*(a00+a10)/total
+  observed = a00
+  statistic = (expected-observed)/np.sqrt(expected)
+
+  error_rate = 1/2 * (a00/(a00+a01) + a00/(a00+a10))
