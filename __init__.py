@@ -2,8 +2,21 @@
 from __future__ import division
 from matrix_io import *
 import subprocess
+import numpy as np
 
 CMD = "time java -jar %s -t OneStep %%s -o %%s" % (os.path.abspath("stepminer-1.1.jar"))
+
+CLASSES = {
+  'UNL': set(), # Unspecified Nonlinear
+  'HIH': set(['10']), # High Implies High
+  'PC': set(['10', '01']), # Positive Correlation
+  'LIL': set(['01']), # Low Implies Low
+  'HIL': set(['11']), # High Imples Low
+  'NC': set(['00', '11']), # Negative Correlation
+  'LIH': set(['00']) # Low Implies High
+}
+CLASSES_I = dict((c, i+1) for i, c in enumerate(CLASSES))
+
 
 def get_stepminer_in_fname(fname):
   return fname + ".stepmine.pcl"
@@ -58,13 +71,38 @@ def transform_output(fp, row_ids, M):
     # associate row ID with threshold value
     rows[rowid] = M[rowid_idx[rowid],int(t)]
   return rows
-    
+
+def compress(v1, v2):
+  """Return v1, v2 pair after removing any pairs with masked values."""
+  assert len(v1)==len(v2)
+  if hasattr(v1, 'mask'):
+    m1 = v1.mask
+  else:
+    m1 = np.zeros(len(v1), dtype=np.bool)
+  if hasattr(v2, 'mask'):
+    m2 = v2.mask
+  else:
+    m2 = np.zeros(len(v2), dtype=np.bool)
+  if not any(m1) and not any(m2):
+    return v1, v2
+  else:
+    if not isinstance(v1, np.ndarray):
+      v1v = np.array(v1)
+    else:
+      v1 = v1v
+    if not isinstance(v2, np.ndarray):
+      v2v = np.array(v2)
+    else:
+      v2v = v2
+    return v1v[~(m1|m2)], v2v[~(m1|m2)]
+  
+
 def get_bound(M, percentile=.05):
   """Return threshold +/- bound based on stdev percentile."""
   c = np.percentile(np.std(M, 1), percentile)
-  return c
+  return c*2
 
-def classify_pair(v1, v2, t1, c1, t2, c2, conf_t=2/3):
+def classify_pair(v1, v2, t1, c1, t2, c2, conf_t=2/3, stat_min=3, error_max=0.1):
   """Boolean classify pair of vectors.
 
   Args:
@@ -73,25 +111,48 @@ def classify_pair(v1, v2, t1, c1, t2, c2, conf_t=2/3):
     c1, c2: threshold confidence interval for v1 and v2 respectively
     conf_t: maximum ratio of values in threshold interval to classify
   Returns:
-    ?
+    str of CLASS in ('UNL', 'HIH', 'PC', 'LIL', 'HIL', 'NC', 'LIH')
   """
   assert len(v1) == len(v2)
   low_conf1 = np.sum((v1 >= t1-c1) & (v1 <= t1+c1))
   low_conf2 = np.sum((v2 >= t2-c2) & (v2 <= t2+c2))
-  if low_conf1/len(v1) > conf:
+  if low_conf1/len(v1) > conf_t:
     return "Unclassifed"
-  if low_conf2/len(v2) > conf:
+  if low_conf2/len(v2) > conf_t:
     return "Unclassifed"
+
+  counts = {
+    '00': np.sum(v1<t1-c1 & v2<t2-c2),
+    '01': np.sum(v1<t1-c1 & v2>t2+c2),
+    '10': np.sum(v1>t1+c1 & v2<t2-c2),
+    '11': np.sum(v1>t1+c1 & v2>t2+c2),
+    }
+  sparse = {}
+  for q in counts:
+    stat, err = test_sparse(q,counts)
+    sparse[q] = (stat >= stat_min and err <= error_max)
+  # Classify based on which quads are sparse.
+  all_quads = set(sparse.keys())
+  for cls, quads in CLASSES.items():
+    if all(sparse[q] for q in quads) and \
+          all(not sparse[q] for q in all_quads-quads):
+      return cls
+  # This should never return None; if so, there is some bug.
+  return None
   
-  a00 = np.sum(v1<t1-c1 & v2<t2-c2)
-  a01 = np.sum(v1<t1-c1 & v2>t2+c2)
-  a10 = np.sum(v1>t1+c1 & v2<t2-c2)
-  a11 = np.sum(v1>t1+c1 & v2>t2+c2)
-  total = a00 + a01 + a10 + a11
-  assert low_conf1 + low_conf2 + total == len(v1) 
+def test_sparse(q, D):
+  """Return if quadrant q is sparse given quad density counts dict D"""
+  assert q in ('00', '01', '10', '11')
+  assert set(D.keys()) == set(('00', '01', '10', '11'))
+  total = sum(D.keys())
+  
+  expected = (D[q] + D[q[0]+toggle(q[1])]) * (D[q] + D[toggle(q[0])+q[1]]) / total
+  observed = D[q]
+  statistic = (expected - observed) / np.sqrt(expected)
+  error = 0.5 * (D[q] / (D[q] + D[q[0]+toggle(q[1])]) + D[q] / (D[q] + D[toggle(q[0])+q[1]]))
+  return statistic, error
 
-  expected = (a00+a01)*(a00+a10)/total
-  observed = a00
-  statistic = (expected-observed)/np.sqrt(expected)
-
-  error_rate = 1/2 * (a00/(a00+a01) + a00/(a00+a10))
+def toggle(c):
+  if c == '0': return '1'
+  elif c == '1': return '0'
+  else: return None
