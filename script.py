@@ -45,9 +45,6 @@ def main(m1_fname=None, m2_fname=None, percentile=.05, outdir="", cleanup=True, 
     raise Exception, "Self comparison not yet implemented"  # TODO
   else:
     C = classify_all_dual(D1, D2, thresholds1, thresholds2, c1, c2)
-    # !!! THIS IS TOO SLOW. COMPUTE RANGES PER MATRIX, THEN COMBINE!
-    # TODO
-    # Compare rows between two matrices.
 
   # Save classifications
   out_fname = os.path.basename(m1_fname)
@@ -63,10 +60,10 @@ def main(m1_fname=None, m2_fname=None, percentile=.05, outdir="", cleanup=True, 
 
   # Report stats for classification
   print "Class counts for %d items in (%d,%d) class matrix." % \
-      (np.size(M), M.shape[0], M.shape[1])
+      (np.size(C), C.shape[0], C.shape[1])
   for x, name in CLASSES_I.items():
     cnt = np.sum(C[C==x])
-    pct = cnt/np.size(M)
+    pct = cnt/np.size(C)
     print "%s (%d): %d (%.4f)" % (name, x, cnt, pct)
   print "Complete!"
 

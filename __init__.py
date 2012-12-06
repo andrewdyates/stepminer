@@ -104,8 +104,8 @@ def classify_all_dual(D1, D2, thresholds1, thresholds2, c1, c2, conf=2/3, stat_m
   Mq2 = set_quantile(D2,c2,thresholds2)
 
   # Q: are enough elements in either high or low regions?
-  Q1 = np.sum(Mq1 == 4,1) <= n*nonsig
-  Q2 = np.sum(Mq2 == 4,1) <= n*nonsig
+  Q1 = np.sum(Mq1 == 4,1) <= n*conf
+  Q2 = np.sum(Mq2 == 4,1) <= n*conf
   # Create classification matrix. By default, all entries are 0 => UNL
   C = np.zeros((m1,m2), dtype=np.int8)
   
