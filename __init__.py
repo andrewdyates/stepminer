@@ -32,7 +32,7 @@ CLASSES_I = {
   'LIH': 6,
 }
 ALL_QUADS = set(('00', '01', '10', '11'))
-
+REPORT = 10000
 
 def set_quantile(D,c,thresholds):
   """Return matrix of (-1, 0, 1) of element row quantile."""
@@ -40,13 +40,13 @@ def set_quantile(D,c,thresholds):
   for i, row in enumerate(D['M']):
     t = thresholds[D['row_ids'][i]]
     low = D['M'][i]<(t-c)
-    high = D['M'][i]<(t+c)
+    high = D['M'][i]>(t+c)
     # low = 0 (default), high = 1, nonsig = 4 (not high or low)
     Mq[i,high] = 1 
     Mq[i,~high&~low] = 4
   return Mq
 
-def test_sparse(q, D):
+def test_sparse(q, D, verbose=False):
   """Return if quadrant q is sparse given quad density counts dict D
   q[0] is Y quantile (rows in matrix)
   q[1] is X quantile (cols in matrix)
@@ -64,6 +64,9 @@ def test_sparse(q, D):
   total = sum(D.values())
   expected = Yq * Xq / total
   observed = D[q]
+  if Yq == 0 or Xq == 0:
+    if verbose: print "WARNING: EMPTY AXIS!", D, total
+    return None, None
   # --- Joint probability statistic.
   statistic = (expected - observed) / np.sqrt(expected)
   # --- Error Rate
@@ -84,7 +87,7 @@ def classify_from_sparse(sparse):
   # This should never return None; if so, there is some bug.
   return None
   
-def classify_all_dual(D1, D2, thresholds1, thresholds2, c1, c2, conf=2/3, stat_min=3, error_max=0.1):
+def classify_all_dual(D1, D2, thresholds1, thresholds2, c1, c2, conf=2/3, stat_min=3, error_max=0.1, verbose=True):
   """Boolean classify all rows in two matrix objects.
 
   Args:
@@ -106,14 +109,29 @@ def classify_all_dual(D1, D2, thresholds1, thresholds2, c1, c2, conf=2/3, stat_m
   # Q: are enough elements in either high or low regions?
   Q1 = np.sum(Mq1 == 4,1) <= n*conf
   Q2 = np.sum(Mq2 == 4,1) <= n*conf
+  if verbose:
+    print "Number of rows with sufficient number of significant items: M1: %d, M2: %d" % \
+        (np.sum(Q1), np.sum(Q2))
+  Q1[(np.sum(Mq1 == 1,1) == 0) | (np.sum(Mq1 == 0,1) == 0)] = 0
+  Q2[(np.sum(Mq2 == 1,1) == 0) | (np.sum(Mq2 == 0,1) == 0)] = 0
+  if verbose:
+    print "Number of rows after removing any remaining lopsided distributions: M1: %d, M2: %d" % \
+        (np.sum(Q1), np.sum(Q2))
   # Create classification matrix. By default, all entries are 0 => UNL
   C = np.zeros((m1,m2), dtype=np.int8)
   
   # For each pair of rows such that both have enough points in either high and low
   #   i: row index (y axis); j: col index (x axis)
   Mq1=Mq1*2 # shift all bits one to the left in Mq1 (Y)
-  for i in np.nonzero(Q1):
-    for j in np.nonzero(Q2):
+  n_to_class = (np.sum(Q1)*np.sum(Q2))
+  if verbose:
+    print "To classify %d of %d (%.4f%%) elements..." % (n_to_class, m1*m2, n_to_class/(m1*m2)*100)
+  cnt = 0
+  for i in np.nonzero(Q1)[0]:
+    for j in np.nonzero(Q2)[0]:
+      if not cnt%REPORT and verbose:
+        print "Computing class %d of %d (%.4f%%)" % (cnt, n_to_class, cnt/n_to_class*100)
+      cnt += 1
       y, x = Mq1[i], Mq2[j]
       r = y+x # (0,1)->(high,low); msb: y, lsb: x
       counts = {
@@ -125,13 +143,20 @@ def classify_all_dual(D1, D2, thresholds1, thresholds2, c1, c2, conf=2/3, stat_m
       sparse = {}
       for q in counts:
         stat, err = test_sparse(q,counts)
-        sparse[q] = (stat >= stat_min and err <= error_max)
-      cls = classify_from_sparse(sparse)
+        if stat is None or err is None:
+          # sparseness test fails. break and continue
+          break
+        else:
+          sparse[q] = (stat >= stat_min and err <= error_max)
+      if stat is None or err is None:
+        continue
+      else:
+        cls = classify_from_sparse(sparse)
       if cls is None:
         print "WARNING: Could not classify row %d=>%s, col %d=>%s (idx from 0)" % \
             (i, D1['row_ids'][i], j, D2['row_ids'][j])
-      else:
-        C[i,j] = CLASSES_I[cls]
+        continue
+      C[i,j] = CLASSES_I[cls]
   return C
 
 def get_stepminer_in_fname(fname):

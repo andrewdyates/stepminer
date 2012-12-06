@@ -42,11 +42,10 @@ def get_thresholds(fname=None, outdir="", cleanup=False, overwrite=False, D=None
     stepmine_in_fname, Msort = format_for_stepminer(fname, outdir, D=D)
     print "Loaded and sorted .tab matrix (%s by %s)" % D['M'].shape
     print "Created stepminer input file %s." % (stepmine_in_fname)
-  print "Running stepminer..."
 
   expected_fname = get_stepminer_out_fname(stepmine_in_fname)
   if not overwrite and os.path.exists(expected_fname):
-    print "%s stepminer output exists and overwrite is False, do not recreate file." % (expected_fname)
+    print "%s stepminer output exists and overwrite is False, do not run stepminer and recreate file." % (expected_fname)
     stepmine_out_fname = expected_fname
   else:
     print "Running stepminer..."
