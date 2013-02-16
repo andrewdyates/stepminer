@@ -1,8 +1,10 @@
 #!/usr/bin/python
-"""Call stepminer on gene expression .tab matrix to find midpoint thresholds.
-Can be called as a script or imported as a sub routine (as in script.py)
+"""Call Stepminer on gene expression .tab matrix to find midpoint thresholds.
+Can be called as a script or imported as a sub routine (as in script.py).
+Uses old Sahoo Java implementation.
 
-python script_thresholds.py outdir=$HOME/Desktop fname=example/mRNA10.tab
+EXAMPLE:
+  python script_thresholds.py outdir=$HOME fname=example/mRNA10.tab
 """
 from __init__ import *
 import sys
