@@ -33,15 +33,6 @@ def main(m1_fname=None, m2_fname=None, percentile=.05, outdir="", cleanup=False,
     assert np.size(D1['M'],1) == np.size(D2['M'],1), "%s %s" % (D1['M'].shape,D2['M'].shape)
     thresholds2 = script_thresholds.get_thresholds(fname=m2_fname, outdir=outdir, cleanup=cleanup, D=D2)
 
-  # ??????????????????????????????
-  # HACK! Truncate D1 and D2
-  # ??????????????????????????????
-  print "TRUNCATING D1 and D2 for testing purposes!"
-  print "original:", D1['M'].shape, D2['M'].shape
-  D1['M'] = D1['M'][0:1000,:]
-  D2['M'] = D2['M'][0:1000,:]
-  print "new:", D1['M'].shape, D2['M'].shape
-
   c1 = get_bound(D1['M'], percentile=percentile)
   print "Bound for M1 based on 2*std of %.2f percentile std: c1=2*std=%.4f" % (percentile*100, c1)
   if m2_fname:
